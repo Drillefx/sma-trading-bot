@@ -1,10 +1,11 @@
 .github/workflows/sma-bot.yml
-name: Sma Bot Github Action
+
+name: Run SMA Bot and Send Telegram Alerts
 
 on:
+  workflow_dispatch:   # allows manual trigger
   schedule:
-    - cron: '0 * * * *'  # runs every hour at minute 0
-  workflow_dispatch:     # allows manual run too
+    - cron: '0 * * * *'  # runs hourly
 
 jobs:
   run-bot:
@@ -21,10 +22,11 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install -r requirements.txt
+        pip install yfinance pandas matplotlib python-telegram-bot
 
-    - name: Run SMA bot
+    - name: Run the bot script
       env:
         TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
         TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-      run: python sma_bot.py
+      run: |
+        python3 sma_bot.py
