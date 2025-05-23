@@ -53,18 +53,3 @@ for symbol in symbols:
 
 
 
-    # Plotting
-    plt.figure(figsize=(12, 6))
-    plt.plot(data['Close'], label='Close Price', alpha=0.5)
-    plt.plot(data['ShortMA'], label=f'{short_window}-day SMA')
-    plt.plot(data['LongMA'], label=f'{long_window}-day SMA')
-    plt.scatter(buy_signals.index, buy_signals['Close'], marker='^', color='green', label='Buy Signal', s=100)
-    plt.scatter(sell_signals.index, sell_signals['Close'], marker='v', color='red', label='Sell Signal', s=100)
-    plt.title(f'{symbol} Buy/Sell Signals')
-    plt.xlabel('Date')
-    plt.ylabel('Price')
-    plt.legend()
-    plt.grid(True)
-    plt.tight_layout()
-    plt.show()
-
