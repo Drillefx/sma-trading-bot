@@ -54,3 +54,9 @@ elif not sell_signals.empty:
 else:
     print("ℹ️ No signals today.")
     asyncio.run(send_telegram_message(f"ℹ️ No signals for {symbol} today. Bot ran successfully ✅"))
+   
+    asyncio.run(send_telegram_message("✅ Bot ran! Test message from GitHub Action."))
+
+
+print(f"Using token: {TELEGRAM_TOKEN[:10]}... and chat_id: {TELEGRAM_CHAT_ID}")
+
