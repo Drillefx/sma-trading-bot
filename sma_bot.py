@@ -3,17 +3,16 @@ import pandas as pd
 import os
 import telegram
 
-# Load secrets from environment
+# Load Telegram bot credentials from environment variables
 token = os.getenv("TELEGRAM_TOKEN")
 chat_id = os.getenv("TELEGRAM_CHAT_ID")
 
 bot = telegram.Bot(token=token)
 
-symbols = ['AAPL', 'BTC-USD', 'GC=F']  # Add more as needed
+symbols = ['AAPL', 'BTC-USD', 'GC=F']  # Apple, Bitcoin, Gold
 
 short_window = 20
 long_window = 50
-
 has_signal = False
 
 for symbol in symbols:
@@ -32,11 +31,11 @@ for symbol in symbols:
         data['ShortMA'][long_window:] > data['LongMA'][long_window:]
     ).astype(int)
 
-    # Detect signals
+    # Find buy/sell signals
     buy_signals = data[(data['Signal'] == 1) & (data['Signal'].shift(1) == 0)]
     sell_signals = data[(data['Signal'] == 0) & (data['Signal'].shift(1) == 1)]
 
-    # ✅ Get latest price as float
+    # ✅ Extract latest close as float safely
     latest_price = float(data['Close'].iloc[-1])
 
     if not buy_signals.empty:
@@ -47,6 +46,6 @@ for symbol in symbols:
         has_signal = True
         bot.send_message(chat_id=chat_id, text=f"📉 SELL signal for {symbol} at ${latest_price:.2f}")
 
-# Send fallback if no signals
+# ✅ Fallback if nothing detected
 if not has_signal:
-    bot.send_message(chat_id=chat_id, text="📭 No trading signals detected during this run.")
+    bot.send_message(chat_id=chat_id, text="📭 No trading signals found in this run.")
