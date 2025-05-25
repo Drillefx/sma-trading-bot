@@ -19,7 +19,7 @@ long_window = 50
 
 for symbol in symbols:
     print(f"🔍 Analyzing {symbol}")
-    data = yf.download(symbol, period="6mo")
+    data = yf.download(symbol, period="2d", interval="1h")
 
     if data.empty:
         print(f"❌ No data for {symbol}")
