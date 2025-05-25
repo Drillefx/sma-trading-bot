@@ -1,51 +1,56 @@
 import yfinance as yf
 import pandas as pd
 import os
-import telegram
+import asyncio
+from telegram import Bot
 
-# Load Telegram bot credentials from environment variables
-token = os.getenv("TELEGRAM_TOKEN")
-chat_id = os.getenv("TELEGRAM_CHAT_ID")
+# Load environment variables (from GitHub Secrets)
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
-bot = telegram.Bot(token=token)
+# Define async function to send a Telegram message
+async def send_telegram_message(message: str):
+    bot = Bot(token=TELEGRAM_TOKEN)
+    await bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
 
-symbols = ['AAPL', 'BTC-USD', 'GC=F']  # Apple, Bitcoin, Gold
+# Stock symbol to analyze
+symbol = "AAPL"
 
+# SMA window settings
 short_window = 20
 long_window = 50
-has_signal = False
 
-for symbol in symbols:
-    print(f"🔍 Analyzing {symbol}")
-    data = yf.download(symbol, start="2023-01-01", end="2024-12-31")
+print(f"🔍 Analyzing {symbol}")
+data = yf.download(symbol, period="6mo")  # Fetch recent data
 
-    if data.empty:
-        print(f"❌ Failed to download data for {symbol}")
-        continue
+if data.empty:
+    print(f"❌ No data for {symbol}")
+    asyncio.run(send_telegram_message(f"❌ No data found for {symbol}"))
+    exit()
 
-    # Calculate moving averages
-    data['ShortMA'] = data['Close'].rolling(window=short_window).mean()
-    data['LongMA'] = data['Close'].rolling(window=long_window).mean()
-    data['Signal'] = 0
-    data.loc[data.index[long_window:], 'Signal'] = (
-        data['ShortMA'][long_window:] > data['LongMA'][long_window:]
-    ).astype(int)
+# Calculate moving averages
+data["ShortMA"] = data["Close"].rolling(window=short_window).mean()
+data["LongMA"] = data["Close"].rolling(window=long_window).mean()
+data["Signal"] = 0
+data.loc[data.index[long_window:], "Signal"] = (
+    data["ShortMA"][long_window:] > data["LongMA"][long_window:]
+).astype(int)
 
-    # Find buy/sell signals
-    buy_signals = data[(data['Signal'] == 1) & (data['Signal'].shift(1) == 0)]
-    sell_signals = data[(data['Signal'] == 0) & (data['Signal'].shift(1) == 1)]
+# Find buy and sell points
+buy_signals = data[(data["Signal"] == 1) & (data["Signal"].shift(1) == 0)]
+sell_signals = data[(data["Signal"] == 0) & (data["Signal"].shift(1) == 1)]
 
-    # ✅ Extract latest close as float safely
-    latest_price = float(data['Close'].iloc[-1])
-
-    if not buy_signals.empty:
-        has_signal = True
-        bot.send_message(chat_id=chat_id, text=f"📈 BUY signal for {symbol} at ${latest_price:.2f}")
-
-    if not sell_signals.empty:
-        has_signal = True
-        bot.send_message(chat_id=chat_id, text=f"📉 SELL signal for {symbol} at ${latest_price:.2f}")
-
-# ✅ Fallback if nothing detected
-if not has_signal:
-    bot.send_message(chat_id=chat_id, text="📭 No trading signals found in this run.")
+# Check and notify
+if not buy_signals.empty:
+    latest = buy_signals.iloc[-1]
+    message = f"📈 BUY signal for {symbol} at ${float(latest['Close']):.2f} on {latest.name.strftime('%Y-%m-%d')}"
+    print(message)
+    asyncio.run(send_telegram_message(message))
+elif not sell_signals.empty:
+    latest = sell_signals.iloc[-1]
+    message = f"📉 SELL signal for {symbol} at ${float(latest['Close']):.2f} on {latest.name.strftime('%Y-%m-%d')}"
+    print(message)
+    asyncio.run(send_telegram_message(message))
+else:
+    print("ℹ️ No signals today.")
+    asyncio.run(send_telegram_message(f"ℹ️ No signals for {symbol} today. Bot ran successfully ✅"))
